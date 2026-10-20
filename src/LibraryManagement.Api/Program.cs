@@ -1,22 +1,9 @@
 using LibraryManagement.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using LibraryManagement.Api.Features.Cors;
 
 var builder = WebApplication.CreateBuilder(args);
-
-const string CorsPolicyName = "FrontendCorsPolicy";
-var allowedOrigins = builder.Configuration
-    .GetSection("Cors:Origins")
-    .Get<string[]>() ?? Array.Empty<string>();
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(CorsPolicyName, policy =>
-    {
-        policy.WithOrigins(allowedOrigins)
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-}); 
+builder.Services.AddCorsFeature(builder.Configuration);
 
 // Сервіси. Реєстрацію сервісів конкретних фіч додавайте через extension-методи
 // у папці фічі (наприклад, builder.Services.AddHotelsFeature();), див. CONTRIBUTING.md.
@@ -36,7 +23,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors(CorsPolicyName);
+app.UseCorsFeature();
 
 app.MapControllers();
 
