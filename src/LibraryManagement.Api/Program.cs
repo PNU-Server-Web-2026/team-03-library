@@ -3,6 +3,21 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+const string CorsPolicyName = "FrontendCorsPolicy";
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:Origins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicyName, policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+}); 
+
 // Сервіси. Реєстрацію сервісів конкретних фіч додавайте через extension-методи
 // у папці фічі (наприклад, builder.Services.AddHotelsFeature();), див. CONTRIBUTING.md.
 builder.Services.AddControllers();
@@ -20,6 +35,8 @@ if (app.Environment.IsDevelopment())
     // OpenAPI-документ: /openapi/v1.json
     app.MapOpenApi();
 }
+
+app.UseCors(CorsPolicyName);
 
 app.MapControllers();
 
