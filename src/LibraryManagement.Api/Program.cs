@@ -1,5 +1,7 @@
 using LibraryManagement.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using LibraryManagement.Api.Features.Authors;
+using LibraryManagement.Api.Features.Cors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
+builder.Services.AddCorsFeature(builder.Configuration);
+builder.Services.AddAuthorsFeature();
+builder.Services.AddControllers();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
@@ -20,7 +25,7 @@ if (app.Environment.IsDevelopment())
     // OpenAPI-документ: /openapi/v1.json
     app.MapOpenApi();
 }
-
+app.UseCorsFeature();
 app.MapControllers();
 
 app.Run();
