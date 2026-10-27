@@ -8,7 +8,6 @@ var builder = WebApplication.CreateBuilder(args);
 // у папці фічі (наприклад, builder.Services.AddHotelsFeature();), див. CONTRIBUTING.md.
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
-
 builder.Services.AddLibraryOptions();
 builder.Services.AddOpenApi();
 
