@@ -19,6 +19,7 @@ public sealed class LibraryOptions
     [Range(0, 20, ErrorMessage = "MaxRenewals must be between 0 and 20")]
     public int? MaxRenewals { get; set; }
 
+    [Required]
     [Range(typeof(decimal), "0", "100",
     ErrorMessage = "FinePerDay must be between 0 and 100")]
     public decimal? FinePerDay { get; set; }
