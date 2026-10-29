@@ -74,6 +74,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     }
 
     // Respawn не працює з базою без жодної таблиці даних (поки немає сутностей і міграцій).
+    // Respawn fails on a schema without tables. Remove this check once
+    // the first entity migration is added.
     private static async Task<bool> HasTablesToResetAsync(NpgsqlConnection connection)
     {
         await using var command = new NpgsqlCommand(
