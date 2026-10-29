@@ -1,4 +1,5 @@
 using LibraryManagement.Api.Data;
+using LibraryManagement.Api.Features.BookCopies;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
@@ -20,6 +21,8 @@ builder.Services.AddOpenApi(options =>
         return Task.CompletedTask;
     });
 });
+
+builder.Services.AddBookCopiesFeature();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
