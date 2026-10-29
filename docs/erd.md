@@ -37,7 +37,7 @@ erDiagram
         int Id PK
         string Title "NOT NULL, ≤ 300"
         string Isbn UK "NOT NULL, char(13), ISBN-13 з контрольною цифрою"
-        int PublishYear "CHECK 1450..поточний рік"
+        int PublishYear "CHECK >= 1450; ≤ поточний рік перевіряє застосунок"
         int Pages "CHECK 1..10000"
         string Language "NOT NULL, char(2), ISO 639-1"
         string CoverPath "NULL, шлях до обкладинки (S8)"
@@ -59,7 +59,7 @@ erDiagram
     BookCopy {
         int Id PK
         int BookId FK "NOT NULL → Book, Restrict"
-        string InventoryNumber UK "NOT NULL, INV-000123, унікальний серед невидалених"
+        string InventoryNumber UK "NOT NULL, INV-000123, унікальний серед усіх (і списаних)"
         string Condition "enum як рядок: New, Good, Worn, Damaged"
         string Location "NOT NULL, ≤ 50, шафа/полиця"
         bool IsDeleted "soft delete"
@@ -129,7 +129,7 @@ erDiagram
 | Reader — Reservation | 1:N | Restrict |
 | Book — Reservation | 1:N (черга на книгу) | Restrict |
 | BookCopy — Reservation | 0..1:N (утримання) | SetNull |
-| User — Reader | 1:0..1 | Restrict |
+| User — Reader | 0..1:0..1 (у читача може не бути облікового запису) | Restrict |
 
 ## Неочевидні рішення
 
@@ -139,7 +139,7 @@ erDiagram
 - **Fine — 1:0..1 до Loan.** Штраф створюється лише при поверненні після `DueAt`, тому `LoanId` унікальний. Сума — `decimal` (`numeric(10,2)`), а не `double`, щоб не було похибок округлення грошей. Ставка (`FinePerDay`) береться з конфігурації і в БД не зберігається.
 - **Reservation посилається на Book, а не на BookCopy**: читачу підходить будь-який вільний екземпляр. Коли екземпляр повертають, перший резерв у черзі переходить у `ReadyForPickup`, а в `HeldBookCopyId` записується утримуваний екземпляр. Так можна заборонити видачу цього екземпляра іншому читачу. Позиція в черзі обчислюється за `CreatedAt` серед резервів у статусі `Waiting` і не зберігається.
 - **Один активний резерв на книгу для читача**: частковий унікальний індекс `UNIQUE (ReaderId, BookId) WHERE Status IN ('Waiting', 'ReadyForPickup')`.
-- **Soft delete для BookCopy.** Списаний екземпляр лишається в БД (на нього посилаються історичні видачі). Глобальний query filter ховає записи з `IsDeleted = true`, а унікальність `InventoryNumber` перевіряється лише серед невидалених (filtered index).
+- **Soft delete для BookCopy.** Списаний екземпляр лишається в БД (на нього посилаються історичні видачі). Глобальний query filter ховає записи з `IsDeleted = true`. Унікальність `InventoryNumber` діє серед **усіх** екземплярів, включно зі списаними: звичайний `UNIQUE` без фільтра. Інакше номер списаного екземпляра можна було б видати новому, і в історії видач два різні екземпляри мали б однаковий номер.
 - **Конкурентність Book** — через системний стовпець PostgreSQL `xmin` (`IsRowVersion`), тому окремий стовпець версії не потрібен.
 - **Enum-и** (`Condition`, `Status`) зберігаються як рядки (`HasConversion<string>()`), щоб дані в БД були читабельні й не ламалися при зміні порядку значень enum.
 - **Сурогатні ключі `int Id`** використано всюди, навіть де є природний унікальний ключ (ISBN, CardNumber). Такий ключ стабільний, коли природне значення виправляють, і робить JOIN дешевшими.
@@ -152,7 +152,7 @@ erDiagram
 |---|---|
 | Genre | `UNIQUE (Name)` |
 | Book | `UNIQUE (Isbn)`, `CHECK (Pages BETWEEN 1 AND 10000)`, `CHECK (PublishYear >= 1450)` |
-| BookCopy | `UNIQUE (InventoryNumber) WHERE NOT IsDeleted` |
+| BookCopy | `UNIQUE (InventoryNumber)` (без фільтра, включно зі списаними) |
 | Reader | `UNIQUE (Email)`, `UNIQUE (CardNumber)`, `UNIQUE (UserId)` |
 | Loan | `UNIQUE (BookCopyId) WHERE ReturnedAt IS NULL`, `CHECK (DueAt > IssuedAt)` |
 | Fine | `UNIQUE (LoanId)`, `CHECK (Amount > 0)` |
