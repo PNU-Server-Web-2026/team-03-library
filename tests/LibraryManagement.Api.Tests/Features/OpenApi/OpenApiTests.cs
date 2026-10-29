@@ -4,12 +4,13 @@ using Microsoft.AspNetCore.Hosting;
 
 namespace LibraryManagement.Api.Tests.Features.OpenApi;
 
-public class OpenApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
+[Collection(ApiCollection.Name)]
+public class OpenApiTests(ApiFactory factory) : IntegrationTestBase(factory)
 {
     [Fact]
     public async Task OpenApi_ShouldContainMetadata_InDevelopment()
     {
-        await using var developmentFactory = factory.WithWebHostBuilder(
+        await using var developmentFactory = Factory.WithWebHostBuilder(
             builder => builder.UseEnvironment("Development"));
         using var client = developmentFactory.CreateClient();
 
@@ -34,7 +35,7 @@ public class OpenApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task OpenApi_ShouldContainPingSummary_InDevelopment()
     {
-        await using var developmentFactory = factory.WithWebHostBuilder(
+        await using var developmentFactory = Factory.WithWebHostBuilder(
             builder => builder.UseEnvironment("Development"));
         using var client = developmentFactory.CreateClient();
 
@@ -55,7 +56,7 @@ public class OpenApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Documentation_ShouldReturnNotFound_InProduction()
     {
-        await using var productionFactory = factory.WithWebHostBuilder(
+        await using var productionFactory = Factory.WithWebHostBuilder(
             builder => builder.UseEnvironment("Production"));
         using var client = productionFactory.CreateClient();
 
