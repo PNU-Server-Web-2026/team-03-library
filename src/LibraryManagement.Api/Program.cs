@@ -1,6 +1,7 @@
 using LibraryManagement.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using LibraryManagement.Api.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 // у папці фічі (наприклад, builder.Services.AddHotelsFeature();), див. CONTRIBUTING.md.
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
+builder.Services.AddLibraryOptions();
+
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((document, context, cancellationToken) =>
