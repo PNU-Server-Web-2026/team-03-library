@@ -24,7 +24,6 @@ if (app.Environment.IsDevelopment())
 {
     // OpenAPI-документ: /openapi/v1.json
     app.MapOpenApi();
-    app.MapScalarApiReference();
 }
 app.UseCorsFeature();
 app.MapControllers();
