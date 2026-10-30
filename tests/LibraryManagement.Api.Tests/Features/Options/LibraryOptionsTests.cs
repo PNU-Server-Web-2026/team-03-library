@@ -23,7 +23,7 @@ public class LibraryOptionsTests(ApiFactory factory)
     }
 
     [Fact]
-    public void Options_Can_Be_Override()
+    public void Options_CanBeOverridden()
     {
         using var customFactory = factory.WithWebHostBuilder(builder =>
             builder.UseSetting("Library:MaxActiveLoans", "22"));
@@ -40,6 +40,7 @@ public class LibraryOptionsTests(ApiFactory factory)
     [InlineData("Library:MaxActiveLoans", "999", "MaxActiveLoans")]
     [InlineData("Library:MaxRenewals", "999", "MaxRenewals")]
     [InlineData("Library:ReservationHoldHours", "999", "ReservationHoldHours")]
+    [InlineData("Library:FinePerDay", "999", "FinePerDay")]
     public void Invalid_Options_Contain_Field_Name(
     string settingKey,
     string invalidValue,

@@ -1,4 +1,3 @@
-
 using System.Net;
 using System.Net.Http.Json;
 using LibraryManagement.Api.Features.Info;
@@ -9,7 +8,7 @@ public class InfoTests(ApiFactory factory)
     : IClassFixture<ApiFactory>
 {
     [Fact]
-    public async Task Get_Info()
+    public async Task Get_Info_ReturnsApplicationMetadata()
     {
         using var client = factory.CreateClient();
 
