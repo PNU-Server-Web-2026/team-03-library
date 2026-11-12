@@ -5,27 +5,47 @@ namespace LibraryManagement.Api.Features.Authors;
 public class InMemoryAuthorService : IAuthorService
 {
     private readonly ConcurrentDictionary<int, Author> _authors = new();
-    private int _currentId;
+    private int _idCounter = 0;
 
     public Task<IReadOnlyList<AuthorResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<AuthorResponse> result = _authors.Values
-            .Select(MapToResponse)
-            .OrderBy(a => a.Id)
-            .ToList();
+        cancellationToken.ThrowIfCancellationRequested();
 
-        return Task.FromResult(result);
+        IReadOnlyList<AuthorResponse> responses = _authors.Values.Select(a => new AuthorResponse(
+            a.Id,
+            a.FirstName,
+            a.LastName,
+            a.BirthYear,
+            a.Country
+        )).ToList();
+
+        return Task.FromResult(responses);
     }
 
     public Task<AuthorResponse?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        _authors.TryGetValue(id, out var author);
-        return Task.FromResult(author is not null ? MapToResponse(author) : null);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_authors.TryGetValue(id, out var author))
+        {
+            var response = new AuthorResponse(
+                author.Id,
+                author.FirstName,
+                author.LastName,
+                author.BirthYear,
+                author.Country
+            );
+            return Task.FromResult<AuthorResponse?>(response);
+        }
+
+        return Task.FromResult<AuthorResponse?>(null);
     }
 
     public Task<AuthorResponse> CreateAsync(CreateAuthorRequest request, CancellationToken cancellationToken = default)
     {
-        var id = Interlocked.Increment(ref _currentId);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var id = Interlocked.Increment(ref _idCounter);
         var author = new Author
         {
             Id = id,
@@ -36,30 +56,55 @@ public class InMemoryAuthorService : IAuthorService
         };
 
         _authors[id] = author;
-        return Task.FromResult(MapToResponse(author));
+
+        var response = new AuthorResponse(
+            author.Id,
+            author.FirstName,
+            author.LastName,
+            author.BirthYear,
+            author.Country
+        );
+
+        return Task.FromResult(response);
     }
 
     public Task<bool> UpdateAsync(int id, UpdateAuthorRequest request, CancellationToken cancellationToken = default)
     {
-        if (!_authors.TryGetValue(id, out var author))
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!_authors.ContainsKey(id))
         {
             return Task.FromResult(false);
         }
 
-        author.FirstName = request.FirstName;
-        author.LastName = request.LastName;
-        author.BirthYear = request.BirthYear;
-        author.Country = request.Country;
+        bool updated = false;
 
-        return Task.FromResult(true);
+        _authors.AddOrUpdate(
+            id,
+            _ => throw new KeyNotFoundException(),
+            (key, existingAuthor) =>
+            {
+                var newAuthor = new Author
+                {
+                    Id = existingAuthor.Id,
+                    FirstName = request.FirstName,
+                    LastName = request.LastName,
+                    BirthYear = request.BirthYear,
+                    Country = request.Country
+                };
+                updated = true;
+                return newAuthor;
+            }
+        );
+
+        return Task.FromResult(updated);
     }
 
     public Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var removed = _authors.TryRemove(id, out _);
         return Task.FromResult(removed);
     }
-
-    private static AuthorResponse MapToResponse(Author author) =>
-        new(author.Id, author.FirstName, author.LastName, author.BirthYear, author.Country);
 }
