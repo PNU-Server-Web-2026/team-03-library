@@ -101,3 +101,9 @@ dotnet user-secrets set "ConnectionStrings:Default" "Host=...;..." --project src
 
 Коротко: **issue → гілка від `dev` → PR у `dev` → рев'ю → захист → merge**.
 Повні правила (іменування гілок, коміти, рев'ю, ліміти WIP, міграції) — у [CONTRIBUTING.md](CONTRIBUTING.md).
+
+
+### 1. Налаштування змінних середовища
+Скопіюйте шаблон конфігурації у локальний файл `.env`:
+```bash
+cp .env.example .env
