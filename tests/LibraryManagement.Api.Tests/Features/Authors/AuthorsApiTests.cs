@@ -98,4 +98,31 @@ public class AuthorsApiTests(WebApplicationFactory<Program> factory) : IClassFix
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task PutAndDelete_ConcurrentRequests_DoesNotReturnInternalServerError()
+{
+    var postResponse = await _client.PostAsJsonAsync("/api/authors", 
+        new CreateAuthorRequest("Concurrent", "Author", 2000, "Ukraine"));
+    var created = await postResponse.Content.ReadFromJsonAsync<AuthorResponse>();
+    Assert.NotNull(created);
+
+    var updateRequest = new UpdateAuthorRequest("Concurrent", "Updated", 2000, "Ukraine");
+
+    var putTask = _client.PutAsJsonAsync($"/api/authors/{created.Id}", updateRequest);
+    var deleteTask = _client.DeleteAsync($"/api/authors/{created.Id}");
+
+    var responses = await Task.WhenAll(putTask, deleteTask);
+
+    // перев, чи жоден із запитів не впав з 500 помилкою
+    foreach (var response in responses)
+    {
+        Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+
+        Assert.True(
+            response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound,
+            $"Unexpected status code: {response.StatusCode}"
+        );
+        }
+    }
 }
