@@ -53,29 +53,24 @@ public class InMemoryGenreService : IGenreService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!_genres.ContainsKey(id))
+        while (true)
         {
-            return Task.FromResult(false);
-        }
-
-        bool updated = false;
-
-        _genres.AddOrUpdate(
-            id,
-            _ => throw new KeyNotFoundException(),
-            (key, existingGenre) =>
+            if (!_genres.TryGetValue(id, out var existingGenre))
             {
-                var newGenre = new Genre
-                {
-                    Id = existingGenre.Id,
-                    Name = request.Name
-                };
-                updated = true;
-                return newGenre;
+                return Task.FromResult(false);
             }
-        );
 
-        return Task.FromResult(updated);
+            var updatedGenre = new Genre
+            {
+                Id = existingGenre.Id,
+                Name = request.Name
+            };
+
+            if (_genres.TryUpdate(id, updatedGenre, existingGenre))
+            {
+                return Task.FromResult(true);
+            }
+        }
     }
 
     public Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
