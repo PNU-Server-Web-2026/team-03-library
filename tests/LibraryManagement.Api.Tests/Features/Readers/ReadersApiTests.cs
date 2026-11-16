@@ -195,4 +195,54 @@ public class ReadersApiTests
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Update_WhenMultipleRequestsAreSentConcurrently_ReturnsNoContentForAll()
+    {
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync(
+            "/api/readers",
+            CreateRequest());
+
+        createResponse.EnsureSuccessStatusCode();
+
+        var createdReader = await createResponse.Content
+            .ReadFromJsonAsync<ReaderResponse>();
+
+        Assert.NotNull(createdReader);
+
+        const int requestCount = 20;
+
+        var updateTasks = Enumerable.Range(0, requestCount)
+            .Select(i =>
+            {
+                var request = UpdateRequest() with
+                {
+                    FirstName = $"Updated FirstName {i}"
+                };
+
+                return client.PutAsJsonAsync(
+                    $"/api/readers/{createdReader.Id}",
+                    request);
+            });
+
+        var responses = await Task.WhenAll(updateTasks);
+
+        try
+        {
+            Assert.All(responses, response =>
+            {
+                Assert.Equal(
+                    HttpStatusCode.NoContent,
+                    response.StatusCode);
+            });
+        }
+        finally
+        {
+            foreach (var response in responses)
+                response.Dispose();
+        }
+    }
 }

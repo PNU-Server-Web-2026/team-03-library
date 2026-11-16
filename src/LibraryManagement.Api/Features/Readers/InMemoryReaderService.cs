@@ -65,30 +65,29 @@ public sealed class InMemoryReaderService : IReaderService
         UpdateReaderRequest request,
         CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!_readers.TryGetValue(id, out var existingReader))
+        while (true)
         {
-            return Task.FromResult(false);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!_readers.TryGetValue(id, out var existingReader))
+            {
+                return Task.FromResult(false);
+            }
+
+            var updatedReader = new Reader
+            {
+                Id = existingReader.Id,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                Phone = request.Phone,
+                CardNumber = request.CardNumber,
+                RegisteredAt = existingReader.RegisteredAt
+            };
+
+            if (_readers.TryUpdate(id, updatedReader, existingReader))
+                return Task.FromResult(true);
         }
-
-        var updatedReader = new Reader
-        {
-            Id = existingReader.Id,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            Email = request.Email,
-            Phone = request.Phone,
-            CardNumber = request.CardNumber,
-            RegisteredAt = existingReader.RegisteredAt
-        };
-
-        var updated = _readers.TryUpdate(
-            id,
-            updatedReader,
-            existingReader);
-
-        return Task.FromResult(updated);
     }
 
     public Task<bool> DeleteAsync(
