@@ -1,4 +1,3 @@
-
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -205,5 +204,65 @@ public sealed class BooksApiTests
         var response = await client.DeleteAsync("/api/books/999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithHyphenatedIsbn13_ReturnsCreated()
+    {
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = CreateBookRequest() with
+        {
+            Isbn = "978-0-596-52068-7"
+        };
+
+        var response = await client.PostAsJsonAsync("/api/books", request);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var book = await response.Content.ReadFromJsonAsync<BookResponse>();
+
+        Assert.NotNull(book);
+        Assert.Equal("978-0-596-52068-7", book.Isbn);
+    }
+
+    [Fact]
+    public async Task Update_WhenMultipleRequestsAreSentConcurrently_ReturnsNoContentForAll()
+    {
+        using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var createResponse = await client.PostAsJsonAsync(
+            "/api/books",
+            CreateBookRequest());
+
+        createResponse.EnsureSuccessStatusCode();
+
+        var createdBook = await createResponse.Content.ReadFromJsonAsync<BookResponse>();
+        Assert.NotNull(createdBook);
+
+        const int requestCount = 20;
+
+        var updateTasks = Enumerable.Range(0, requestCount)
+            .Select(i =>
+            {
+                var request = UpdateBookRequest() with
+                {
+                    Title = $"Updated Book {i}"
+                };
+
+                return client.PutAsJsonAsync(
+                    $"/api/books/{createdBook.Id}",
+                    request);
+            });
+
+        var responses = await Task.WhenAll(updateTasks);
+
+        Assert.All(responses, response =>
+        {
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+            response.Dispose();
+        });
     }
 }

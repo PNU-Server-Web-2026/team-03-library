@@ -60,24 +60,26 @@ public sealed class InMemoryBookService : IBookService
         UpdateBookRequest request,
         CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!_books.TryGetValue(id, out var existingBook))
-            return Task.FromResult(false);
-
-        var updatedBook = new Book
+        while (true)
         {
-            Id = id,
-            Title = request.Title,
-            Isbn = request.Isbn,
-            PublishYear = request.PublishYear,
-            Pages = request.Pages,
-            Language = request.Language
-        };
+            cancellationToken.ThrowIfCancellationRequested();
 
-        var updated = _books.TryUpdate(id, updatedBook, existingBook);
+            if (!_books.TryGetValue(id, out var existingBook))
+                return Task.FromResult(false);
 
-        return Task.FromResult(updated);
+            var updatedBook = new Book
+            {
+                Id = id,
+                Title = request.Title,
+                Isbn = request.Isbn,
+                PublishYear = request.PublishYear,
+                Pages = request.Pages,
+                Language = request.Language
+            };
+
+            if (_books.TryUpdate(id, updatedBook, existingBook))
+                return Task.FromResult(true);
+        }
     }
 
     public Task<bool> DeleteAsync(
