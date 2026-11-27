@@ -74,6 +74,37 @@ Host=localhost;Port=5432;Database=library;Username=postgres;Password=postgres
 dotnet user-secrets set "ConnectionStrings:Default" "Host=...;..." --project src/LibraryManagement.Api
 ```
 
+### Тести
+
+Інтеграційні тести працюють на справжньому PostgreSQL, який [Testcontainers](https://dotnet.testcontainers.org/modules/postgres/) піднімає в Docker. Тому **для запуску тестів потрібен запущений Docker** (Docker Desktop або Docker Engine). Окремо запускати `docker compose up -d db` не потрібно: тести не використовують локальну БД.
+
+```bash
+dotnet test
+```
+
+Як це влаштовано:
+
+- `ApiFactory` один раз на весь прогін стартує контейнер `postgres:17-alpine`, застосовує міграції (`Database.MigrateAsync`) і підміняє `ConnectionStrings:Default` на адресу контейнера;
+- усі тестові класи ділять один контейнер через колекцію `ApiCollection` (`ICollectionFixture<ApiFactory>`);
+- перед кожним тестом `IntegrationTestBase` очищає всі таблиці (Respawn), тому тести не залежать від порядку виконання.
+
+Новий тестовий клас:
+
+```csharp
+[Collection(ApiCollection.Name)]
+public class BooksApiTests(ApiFactory factory) : IntegrationTestBase(factory)
+{
+    [Fact]
+    public async Task GetAll_ReturnsOk()
+    {
+        var response = await Client.GetAsync("/api/books");
+        // ...
+    }
+}
+```
+
+Перший запуск довший, бо Docker завантажує образ PostgreSQL. У CI (GitHub Actions, `ubuntu-latest`) Docker уже є.
+
 ## Структура рішення
 
 ```
