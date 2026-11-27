@@ -2,11 +2,13 @@ using LibraryManagement.Api.Data;
 using LibraryManagement.Api.Features.BookCopies;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using LibraryManagement.Api.Features.Genres;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Сервіси. Реєстрацію сервісів конкретних фіч додавайте через extension-методи
 // у папці фічі (наприклад, builder.Services.AddHotelsFeature();), див. CONTRIBUTING.md.
+builder.Services.AddGenresFeature();
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi(options =>
